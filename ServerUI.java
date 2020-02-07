@@ -4,9 +4,13 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.MenuItem;
+import java.awt.PopupMenu;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.io.BufferedReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
@@ -22,13 +26,17 @@ import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.UIManager;
 import javax.swing.border.LineBorder;
 import javax.swing.border.TitledBorder;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
@@ -58,20 +66,26 @@ public class ServerUI extends JFrame implements ActionListener{
 	private Thread clockTh;
 	private ThreadClock clock;
 	private int serverState;
-	private Hashmap hm= null;
-	
+	private Hashmap hm;
+	private OpenRoom openRoom;
+	private PopupMenu pmn;
+	private MenuItem kick, miClose;
+	private JMenuItem item;
 	public static ServerUI getInstance(){
 		if(instance == null)
 			instance = new ServerUI();
 		return instance;
 	}
 	ServerUI(){
-		hm = Hashmap.getInstance();
 		this.setSize(dimRes);
 		this.setResizable(false);
 		this.setTitle("GogumaServer");
 		serverState = SERVER_PAUSE;
 		
+		//MyHandler my = new MyHandler();
+		
+		
+		//pmn.show(this,200, 200);
 		//NorthPanel
 		pnlNorth = new JPanel();
 		pnlNorth.setLayout(new FlowLayout(FlowLayout.RIGHT,100,0));
@@ -171,9 +185,13 @@ public class ServerUI extends JFrame implements ActionListener{
 				return component;
 			}
 		};
-		roomTable.addMouseListener(new MouseAdapter() {
-			//@Override
-		});
+		
+		JPopupMenu pmn = new JPopupMenu();
+		item = new JMenuItem("delete");
+		item.addActionListener(this);
+		pmn.add(item);
+		roomTable.setComponentPopupMenu(pmn);
+		
 		roomTable.setAlignmentX(CENTER_ALIGNMENT);
 	
 		JTableHeader header = roomTable.getTableHeader();
@@ -315,13 +333,11 @@ public class ServerUI extends JFrame implements ActionListener{
 		pnlBase.add(pnlLeft);
 		pnlBase.add(pnlRight);
 		
+		
 		this.add(pnlBase);
 		this.setVisible(true);
 	}
-	/*private DefaultTableModel DefaultTableModel(Vector<String> blackListColumn2, int i) {
-		// TODO Auto-generated method stub
-		return null;
-	}*/
+	
 	public void insertUser(String id, String ip){
 		userRow = new Vector<String>();
 		userRow.addElement(id);
@@ -378,7 +394,6 @@ public class ServerUI extends JFrame implements ActionListener{
 						printWriter.flush();
 					}
 					hm.remove(userName);	
-					//System.out.println(userName+"님이 서버로부터 강퇴되었습니다.");
 				}
 			}
 		}
@@ -394,6 +409,7 @@ public class ServerUI extends JFrame implements ActionListener{
 			}			
 		}
 	}
+	
 	public void insertOpenChat(String title, String pw, String max, boolean state) {
 		synchronized (roomTable) {
 			if(state == true) {
@@ -425,22 +441,14 @@ public class ServerUI extends JFrame implements ActionListener{
 		}
 
 	}
-	
-	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-		try{
-			UIManager.setLookAndFeel
-			("javax.swing.plaf.nimbus.NimbusLookAndFeel");
-		}catch(Exception e){
-			System.out.println("ERROR");
-		}
-		new ServerUI();
-	}
+		
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if(e.getSource() == btnStart){
 			lblServerState.setForeground(Color.green);
 			serverState = SERVER_START;
+			System.out.println("되는감");
+			
 		}else if(e.getSource() == btnPause){
 			lblServerState.setForeground(Color.orange);
 			serverState = SERVER_PAUSE;
@@ -463,9 +471,20 @@ public class ServerUI extends JFrame implements ActionListener{
 		else if(e.getSource() == btnKickback){
 			String str = jfId.getText();
 			kickBackUser(str,true);		
+		}else if(e.getSource() == item){
+			System.out.println("ssss");
 		}
 			
 	}
-	
-
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		try{
+			UIManager.setLookAndFeel
+			("javax.swing.plaf.nimbus.NimbusLookAndFeel");
+		}catch(Exception e){
+			System.out.println("ERROR");
+		}
+		Thread th = new ChatServer();
+		th.start();
+	}
 }

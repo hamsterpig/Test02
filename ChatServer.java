@@ -18,38 +18,28 @@ import java.util.Iterator;
 
 import javax.swing.UIManager;
 
-public class ChatServer {
-	private static ServerUI serverUI;
+public class ChatServer extends Thread{	
 	private static Hashmap hm;
 	private static DB dataBase;
-	
-	public static void main(String[] args){
-		try{
-			try{
-				UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel");
-			}catch(Exception e){
-					System.out.println("ERROR");
-			}
-				
-			ServerSocket server = new ServerSocket(10001);
-		
+	private ServerSocket server;
+
+	public void run() {
+		try {
+			server = new ServerSocket(10001);
 			System.out.println("접속을 기다립니다.");
-			
-			hm = Hashmap.getInstance();
+			//hm = Hashmap.getInstance();
 			dataBase = DB.getInstance();
-			serverUI = ServerUI.getInstance();
-			//wait client
 			while(true){
 				Socket sock = server.accept();
-				ChatThread chatthread = new ChatThread(sock, hm);
+				ChatThread chatthread = new ChatThread(sock);
 				chatthread.start();
 			}
-		}
-		catch(Exception e){
+		} catch (IOException e) {
+			e.printStackTrace();
+		}catch(Exception e){
 			System.out.println("server main : "+e);
 		}
 	}
-	
 }
 	class ChatThread extends Thread{
 		private Socket sock;
@@ -58,16 +48,19 @@ public class ChatServer {
 		private String ip;
 		private BufferedReader br;
 		private PrintWriter printWriter;
-		private HashMap<String,PrintWriter> hm;
+		//private HashMap<String,PrintWriter> hm;
+		private Hashmap hm;
 		private boolean dupleFlag = false;
 		private DB dataBase;
 		private ObjectOutputStream oos;
 		private ObjectInputStream ois;
 		
-		public ChatThread(Socket sock, HashMap<String,PrintWriter> hm){
+		public ChatThread(Socket sock){
 			dataBase = DB.getInstance();
+			//hm = Hashmap.getInstance();
 			this.sock = sock;
-			this.hm = hm;
+			
+			//this.hm = hm;
 			this.ip = ""+sock.getInetAddress();
 			this.ip = ip.substring(1);
 			try{
@@ -104,9 +97,6 @@ public class ChatServer {
 					System.out.println("line : "+line);
 					if(line.equals("/quit")){
 						break;
-					}
-					if(line.indexOf("/to") == 0){
-						sendmsg(line);
 					}
 					if(line.indexOf("/log") == 0){//로그인 요청
 						String str[] = line.split(" ", 3);
@@ -173,39 +163,6 @@ public class ChatServer {
 				dataBase.userClose(id, ip, br, printWriter, dupleFlag);	
 			}
 		}
-		
-		
-		public void sendmsg(String msg){
-			int start = msg.indexOf("")+1;
-			int end = msg.indexOf("",start);
-			if(end != -1){
-				String to = msg.substring(start, end);
-				String msg2 = msg.substring(end+1);
-				PrintWriter pw = hm.get(to);
-				if(pw != null){
-					pw.println(id+" 님이 다음의 귓속말을 보내셨습니다. :"+msg2);
-					pw.flush();
-				}
-				pw = hm.get(id);
-				pw.println(id+" 님께 다음의 귓속말을 보냈습니다. :"+msg2);
-				pw.flush();
-			}
-		}
-		
-		public void broadcast(String msg){
-			synchronized (hm) {
-				Collection<PrintWriter> collection = hm.values();
-				Iterator<PrintWriter> iter = collection.iterator();
-				while(iter.hasNext()){
-					PrintWriter pw = iter.next();
-					pw.println(msg);
-					pw.flush();
-				}
-			}
-		}
-	
-		
-		
 	}
 	
 

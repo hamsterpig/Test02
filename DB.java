@@ -510,9 +510,6 @@ public class DB {
 						}							
 					}
 				}
-			
-				
-			
 		}
 		
 	}
@@ -525,18 +522,34 @@ public class DB {
 			if(openRoom.containsKey(title)){
 				ArrayList tempArr = (ArrayList) openRoom.get(title);
 				String maximum = (String)tempArr.get(3);
+				String password = (String)tempArr.get(2);
 				int tempInt = Integer.parseInt((String)tempArr.get(3));
-				ArrayList<String> tempList = (ArrayList<String>) tempArr.get(5);				
-				if((tempInt>tempList.size()) && !(tempList.contains(id))){
-					System.out.println("여기 안들어온듯");
+				ArrayList<String> tempList = (ArrayList<String>) tempArr.get(5);
+				
+				if((tempInt>tempList.size()) && !(tempList.contains(id)) && (pw.equals(password))){
+					
 					synchronized (hm) {
 						PrintWriter printWriter = (PrintWriter) hm.get(id);
 						printWriter.println("/accessSuccess");
 						printWriter.flush();
+						//chatUserList userA userB ...(접근 가능시 클라이언트에게 리스트를 보냄)						
 					}
 					tempList.add(id);
+					synchronized (hm) {
+						if(!tempList.isEmpty()) {
+							PrintWriter printWriter = null;
+							String tempStr = "/chatUserList ";
+							for(int i=0;i<tempList.size();i++) {
+								tempStr+=(tempList.get(i)+" ");
+							}							
+							for(int i=0;i<tempList.size();i++) {								
+								printWriter = (PrintWriter) hm.get(tempList.get(i));
+								printWriter.println(tempStr);
+								printWriter.flush();
+							}							
+						}
+					}
 				}else{					
-					System.out.println("여긴가");
 					synchronized (hm) {
 						PrintWriter printWriter = (PrintWriter) hm.get(id);
 						printWriter.println("/accessFail");
@@ -562,7 +575,22 @@ public class DB {
 				maximum = (tempList.size())+"/"+maximum;
 				System.out.println("outRoom_maximum : "+maximum);
 				serverUI.openChatTableUpdate(title, maximum);
+				synchronized (hm) {
+					if(!tempList.isEmpty()) {
+						PrintWriter printWriter = null;
+						String tempStr = "/chatUserList ";
+						for(int i=0;i<tempList.size();i++) {
+							tempStr+=(tempList.get(i)+" ");
+						}							
+						for(int i=0;i<tempList.size();i++) {								
+							printWriter = (PrintWriter) hm.get(tempList.get(i));
+							printWriter.println(tempStr);
+							printWriter.flush();
+						}							
+					}
+				}
 			}
+			
 		}
 	}
 	
@@ -571,7 +599,10 @@ public class DB {
 		String title = str[1];
 		System.out.println("오픈 채팅방을 삭제합니다. 요청자 ID : "+id+" 대상 방 이름 : "+title);
 		synchronized (openRoom) {
-			openRoom.remove(title);
+			openRoom.remove(title);			
+		}
+		synchronized (hm) {
+			
 		}
 		serverUI.deleteOpenChat(title);
 	}
@@ -636,19 +667,6 @@ public class DB {
 				 oos.writeObject(df);
 				 oos.flush();
 			}
-			/*String fileName = df.getFileName();
-	        ImageIcon icon = df.getImg();
-	        Image img = icon.getImage();
-	        BufferedImage bimg = new BufferedImage(img.getWidth(null),img.getHeight(null),BufferedImage.TYPE_INT_RGB);
-	        Graphics2D g2 = bimg.createGraphics();
-	        g2.drawImage(img, 0, 0, null);
-	        g2.dispose();
-	        System.out.println("서버에서 수신완료"+fileName);
-	        synchronized (objectHM) {
-				 ObjectOutputStream oos = (ObjectOutputStream) objectHM.get(target);
-				 oos.writeObject(bimg);
-				 oos.flush();
-			}*/
 		} catch (ClassNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -657,14 +675,6 @@ public class DB {
 			e.printStackTrace();
 		}
        
-        
-        //ImageIO.write(bimg, "jpg", new File("img2/"+fileName));
-        
 	}
-	
-	
-	
-	
-	
 	
 }
